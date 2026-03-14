@@ -9,18 +9,23 @@ try {
     $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // once the fetch complete data connection should close 
-    echo '<pre>';
-    print_r($computers);
-    echo '</pre>';
+    // echo '<pre>';
+    // print_r($computers);
+    // echo '</pre>';
 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
-        echo $_POST["search-computer"];
-        echo "true";
+        // if (empty($_POST["search-computer"])) {
+        //     header("Location: view_memory.php");
+        // }
 
-    } else {
-        echo "else";
-    }
+        echo $_POST["search-computer"];
+
+        // print_r($GLOBALS['computers']);
+
+        
+
+    } 
 
     $pdo = null;
     $stmt = null;
@@ -47,7 +52,6 @@ try {
         <input type="search" id="site-search" name="search-computer" />
         <button type="submit" name="search-submit">Search</button>
     </form>
-
 
 <table cellpadding="8" border="1">
     <thead>

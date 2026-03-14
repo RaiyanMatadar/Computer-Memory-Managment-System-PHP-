@@ -19,8 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // calculation for inserting data to database 
-    $total_memory = $ram + $rom + $cache_memory;
-
+    $total_memory = number_format(($ram + $rom + $cache_memory ) / 1024);
+    
     $memory_type = "";
     
     if ($total_memory < 4000) {
@@ -56,7 +56,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdo = null;
     $stmt = null;
 
- 
     // keeping ghe user to the existing page once user submit the data 
     header("Location: add_memory.php");
     die();
