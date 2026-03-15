@@ -4,23 +4,31 @@ try {
     
     require_once "db_connect.php";
 
-
     // this will execute if the user search 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-        // stored input value to variable 
-        $search_computer = $_POST["search_computer"];
 
-        $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE computer_name = :search_computer");
-        $stmt->bindParam(":search_computer",$search_computer);
-        $stmt->execute();
+        if ($_POST["searching"] == "submit") {
+            
+            // stored input value to variable 
+            $search_computer = $_POST["search_computer"];
 
-        // storing the resulted data into this array 
-        $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);    
+            // it will check if the input match to any computer name then it will return the results 
+            $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE computer_name LIKE :search_computer");
+            $stmt->bindValue(":search_computer",$search_computer . "%");
+            $stmt->execute();
 
-        if (empty($_POST["search_computer"])) {  
-            header("Location: view_memory.php");
-            exit();
+            // storing the resulted data into this array 
+            $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);     
+
+            // echo '<pre>';
+            // print_r($computers);
+            // echo '</pre>';
+
+            // if empty send the user to the view_memory page 
+            if (empty($_POST["search_computer"])) {  
+                header("Location: view_memory.php");
+                exit();
+            }
         }
         
 
@@ -40,7 +48,6 @@ try {
 }
 
 
-
 ?>
 
 <!DOCTYPE html>
@@ -55,6 +62,7 @@ try {
 
     <form action="view_memory.php" method="post">
         <label>Search computer</label>
+        <input type="hidden" name="searching" value="submit">
         <input type="search" id="site-search" name="search_computer" />
         <button type="submit" name="search_submit">Search</button>
     </form>
