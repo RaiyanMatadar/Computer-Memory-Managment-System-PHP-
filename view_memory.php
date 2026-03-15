@@ -3,29 +3,33 @@
 try {
     
     require_once "db_connect.php";
-    
-    // query for selecting all the data 
-    $stmt = $pdo->query("SELECT * FROM memory_details");
-    $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    // once the fetch complete data connection should close 
-    // echo '<pre>';
-    // print_r($computers);
-    // echo '</pre>';
 
+
+    // this will execute if the user search 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    
+        // stored input value to variable 
+        $search_computer = $_POST["search_computer"];
+
+        $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE computer_name = :search_computer");
+        $stmt->bindParam(":search_computer",$search_computer);
+        $stmt->execute();
+
+        // storing the resulted data into this array 
+        $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);    
+
+        if (empty($_POST["search_computer"])) {  
+            header("Location: view_memory.php");
+            exit();
+        }
         
-        // if (empty($_POST["search-computer"])) {
-        //     header("Location: view_memory.php");
-        // }
 
-        echo $_POST["search-computer"];
-
-        // print_r($GLOBALS['computers']);
-
+    } else {
         
+        $stmt = $pdo->query("SELECT * FROM memory_details");
+        $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    } 
+    }
 
     $pdo = null;
     $stmt = null;
@@ -34,6 +38,8 @@ try {
 } catch (PDOException $e) {
     echo "Database Error: " . $e->getMessage();
 }
+
+
 
 ?>
 
@@ -49,8 +55,8 @@ try {
 
     <form action="view_memory.php" method="post">
         <label>Search computer</label>
-        <input type="search" id="site-search" name="search-computer" />
-        <button type="submit" name="search-submit">Search</button>
+        <input type="search" id="site-search" name="search_computer" />
+        <button type="submit" name="search_submit">Search</button>
     </form>
 
 <table cellpadding="8" border="1">
