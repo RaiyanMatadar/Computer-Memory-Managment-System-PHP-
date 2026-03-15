@@ -45,21 +45,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $cache_memory = $_POST["cache_memory"];
         
         //  calculation the updated info and inserting data to database 
-        $total_memory = $ram + $rom + $cache_memory;
+        $total_memory = number_format(($ram + $rom + $cache_memory) / 1024, 2);
 
         $memory_type = "";
-         
-        if ($total_memory < 4000) {
+        
+        if ($total_memory < (4000 / 1024)) {
             $memory_type = "Low Memory";
         } 
-        else if ($total_memory >= 4000 && $total_memory <= 8000) {
+        else if ($total_memory >= (4000 / 1024) && $total_memory <= (8000 / 1024)) {
             $memory_type = "Medium Memory";
         }
-        else if($total_memory > 8000 ) {
+        else if($total_memory > (8000 / 1024) ) {
             $memory_type = "High Memory";
-        }
-        else {
-            $memory_type = "Not defined";
         }
 
         // query for updating the data 

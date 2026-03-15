@@ -4,10 +4,10 @@ try {
     
     require_once "db_connect.php";
 
-    // this will execute if the user search 
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-        if ($_POST["searching"] == "submit") {
+    // this condition is for search feature 
+    if (isset($_POST["searching"]) && $_POST["searching"] == "submit") {
             
             // stored input value to variable 
             $search_computer = $_POST["search_computer"];
@@ -30,6 +30,25 @@ try {
                 exit();
             }
         }
+
+        // this will exicute only if the user select any option for filtering 
+        if (isset($_POST["filtering"]) && $_POST["filtering"] == "submit") {            
+            // storing memory_type into variable it user selet one 
+            $memory_type = $_POST["memory_type"];
+        
+            if (!empty($memory_type)) {
+
+                $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE memory_type = :memory_type");
+                $stmt->bindParam(":memory_type", $memory_type);
+                $stmt->execute();
+                
+                $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } 
+            else {    
+                $stmt = $pdo->query("SELECT * FROM memory_details");
+                $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        }
         
 
     } else {
@@ -37,7 +56,13 @@ try {
         $stmt = $pdo->query("SELECT * FROM memory_details");
         $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        
+        // echo '<pre>';
+        // print_r($computers);
+        // echo '</pre>';
     }
+
+    
 
     $pdo = null;
     $stmt = null;
@@ -59,12 +84,23 @@ try {
 </head>
 <body>
 
-
+    <!-- for searching  -->
     <form action="view_memory.php" method="post">
         <label>Search computer</label>
         <input type="hidden" name="searching" value="submit">
         <input type="search" id="site-search" name="search_computer" />
         <button type="submit" name="search_submit">Search</button>
+    </form>
+
+    <!-- for filtering  -->
+    <form action="view_memory.php" method="post">
+        <input type="hidden" name="filtering" value="submit">
+        <select name="memory_type" onchange="this.form.submit()">
+            <option value="">-- Select Type --</option>
+            <option value="Low Memory"    <?= (isset($_POST['memory_type']) && $_POST['memory_type'] === 'Low Memory')    ? 'selected' : '' ?>>Low Memory</option>
+            <option value="Medium Memory" <?= (isset($_POST['memory_type']) && $_POST['memory_type'] === 'Medium Memory') ? 'selected' : '' ?>>Medium Memory</option>
+            <option value="High Memory"   <?= (isset($_POST['memory_type']) && $_POST['memory_type'] === 'High Memory')   ? 'selected' : '' ?>>High Memory</option>
+        </select>
     </form>
 
 <table cellpadding="8" border="1">
@@ -77,6 +113,7 @@ try {
             <th>Cache Memory</th>
             <th>Total Memory</th>
             <th>Type</th>
+            <th>Action</th>
         </tr>
     </thead>
     <tbody>
