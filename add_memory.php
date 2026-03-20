@@ -220,6 +220,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <input type="text" name="cache_memory" placeholder="enter Cache Memory">
         <button type="submit">submit</button>
     </form>
+
     <a href="view_memory.php">View Data</a>
+    
 </body>
 </html>

@@ -53,6 +53,33 @@ try {
         $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+
+    // pagination 
+    
+    $recordsPerPage = 2;
+
+    // if view_memory.php?page=NOT NULL then the if will execute 
+    //http://localhost/Computer-Memory-Managment-System-PHP-/view_memory.php?page=4
+    if(isset($_GET['page'])){
+        $page= $_GET['page'];
+    } else{
+        $page=1;
+    }
+    // if the page=4 then the offset value would be 6 
+    $offset = ($page - 1) * $recordsPerPage; 
+
+    // for getting the total row from the database  
+    $total = $pdo->query("SELECT COUNT(*) FROM memory_details")->fetchColumn();
+    $totalPages = ceil($total / $recordsPerPage); //- VALUE 5
+
+    $paginationQue = "SELECT * FROM memory_details LIMIT :limit OFFSET :offset";
+    $stmt2 = $pdo->prepare($paginationQue);
+    $stmt2->bindValue(':limit',  $recordsPerPage, PDO::PARAM_INT);
+    $stmt2->bindValue(':offset', $offset,         PDO::PARAM_INT);
+    $stmt2->execute();
+
+    $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
     $pdo = null;
     $stmt = null;
 
@@ -60,6 +87,7 @@ try {
 } catch (PDOException $e) {
     echo "Database Error: " . $e->getMessage();
 }
+
 
 
 ?>
@@ -229,7 +257,7 @@ try {
         /* ── Table ── */
         table {
             width: 100%;
-            max-width: 860px;
+            max-width: 100vw;
             border-collapse: collapse;
             border: 1px solid #1e1e1e;
             border-radius: 12px;
@@ -380,26 +408,35 @@ try {
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($computers as $computer): ?>
+        <?php foreach ($rows as $row): ?>
         <tr>
-            <td><?= htmlspecialchars($computer['id'])?></td>
-            <td><?= htmlspecialchars($computer['computer_name'])?></td>
-            <td><?= htmlspecialchars($computer['ram'])?></td>
-            <td><?= htmlspecialchars($computer['rom'])?></td>
-            <td><?= htmlspecialchars($computer['cache_memory'])?></td>
-            <td><?= htmlspecialchars($computer['total_memory'])?></td>
-            <td><?= htmlspecialchars($computer['memory_type'])?></td>
+            <td><?= htmlspecialchars($row['id'])?></td>
+            <td><?= htmlspecialchars($row['computer_name'])?></td>
+            <td><?= htmlspecialchars($row['ram'])?></td>
+            <td><?= htmlspecialchars($row['rom'])?></td>
+            <td><?= htmlspecialchars($row['cache_memory'])?></td>
+            <td><?= htmlspecialchars($row['total_memory'])?></td>
+            <td><?= htmlspecialchars($row['memory_type'])?></td>
 
             <td>
-                <a href="update_memory.php?action=update&id=<?= $computer['id']?>">Update</a>
-                <a href="delete_memory.php?action=update&id=<?= $computer['id']?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>               
+                <a href="update_memory.php?action=update&id=<?= $row['id']?>">Update</a>
+                <a href="delete_memory.php?action=update&id=<?= $row['id']?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>               
             </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
 
-    <a href="add_memory.php">back to Home</a>
+<div style="width: 100vw; display: flex; justify-content: center; flex-direction: row;">
+    <?php for ($i=1; $i <= $totalPages ; $i++) { ?>
+        <a style="color: white; margin: 10px; list-style: none;" href="view_memory.php?page=<?= $i ?>"><?= $i ?></a>
+    <?php } ?>
+</div>
 
+<a href="add_memory.php">back to Home</a>
+
+    
 </body>
 </html>
+
+
