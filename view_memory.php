@@ -4,58 +4,7 @@ try {
     
     require_once "db_connect.php";
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    // this condition is for search feature 
-    if (isset($_POST["searching"]) && $_POST["searching"] == "submit") {
-            
-            // stored input value to variable 
-            $search_computer = $_POST["search_computer"];
-
-            // it will check if the input match to any computer name then it will return the results 
-            $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE computer_name LIKE :search_computer");
-            $stmt->bindValue(":search_computer",$search_computer . "%");
-            $stmt->execute();
-
-            // storing the resulted data into this array 
-            $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);     
-
-            // if empty send the user to the view_memory page 
-            if (empty($_POST["search_computer"])) {  
-                header("Location: view_memory.php");
-                exit();
-            }
-        }
-
-        // this will exicute only if the user select any option for filtering 
-        if (isset($_POST["filtering"]) && $_POST["filtering"] == "submit") {            
-            // storing memory_type into variable it user selet one 
-            $memory_type = $_POST["memory_type"];
-        
-            if (!empty($memory_type)) {
-
-                $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE memory_type = :memory_type");
-                $stmt->bindParam(":memory_type", $memory_type);
-                $stmt->execute();
-                
-                $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            } 
-            else {    
-                $stmt = $pdo->query("SELECT * FROM memory_details");
-                $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-        }
-        
-
-    } else {
-        
-        $stmt = $pdo->query("SELECT * FROM memory_details");
-        $computers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-
-    // pagination 
-    
+    // pagination     
     $recordsPerPage = 2;
 
     // if view_memory.php?page=NOT NULL then the if will execute 
@@ -65,24 +14,78 @@ try {
     } else{
         $page=1;
     }
+
     // if the page=4 then the offset value would be 6 
     $offset = ($page - 1) * $recordsPerPage; 
 
-    // for getting the total row from the database  
-    $total = $pdo->query("SELECT COUNT(*) FROM memory_details")->fetchColumn();
-    $totalPages = ceil($total / $recordsPerPage); //- VALUE 5
+    if (isset($_GET['search_computer']) && $_GET['search_computer'] !== '') {
 
-    $paginationQue = "SELECT * FROM memory_details LIMIT :limit OFFSET :offset";
-    $stmt2 = $pdo->prepare($paginationQue);
-    $stmt2->bindValue(':limit',  $recordsPerPage, PDO::PARAM_INT);
-    $stmt2->bindValue(':offset', $offset,         PDO::PARAM_INT);
-    $stmt2->execute();
+        $search_computer = $_GET["search_computer"];
 
-    $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+        // Count matching rows
+        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM memory_details WHERE computer_name LIKE :search_computer");
+        $countStmt->bindValue(':search_computer', $search_computer . '%', PDO::PARAM_STR);
+        $countStmt->execute();
+        $total = $countStmt->fetchColumn();
+        
+        $totalPages = ceil($total / $recordsPerPage); 
+        
+        $paginationQue = ("SELECT * FROM memory_details WHERE computer_name LIKE :search LIMIT :limit OFFSET :offset");
+        
+        $stmt = $pdo->prepare($paginationQue);
+        $stmt->bindValue(':search', $search_computer . '%', PDO::PARAM_STR);
+        $stmt->bindValue(':limit',  $recordsPerPage,        PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,                PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        
+        // if empty send the user to the view_memory page=1 
+        if (empty($_GET["search_computer"])) {  
+            header("Location: view_memory.php?page=1");
+            exit();
+        }
+
+    } else if (isset($_POST['filtering']) && $_POST['filtering'] === 'submit' && !empty($_POST['memory_type'])){
+
+        $memory_type = $_POST['memory_type'];
+
+        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM memory_details WHERE memory_type = :memory_type");
+        $countStmt->bindValue(':memory_type', $memory_type, PDO::PARAM_STR);
+        $countStmt->execute();
+        $total = $countStmt->fetchColumn();
+
+        $totalPages = ceil($total / $recordsPerPage);
+
+        $stmt = $pdo->prepare("SELECT * FROM memory_details WHERE memory_type = :memory_type LIMIT :limit OFFSET :offset");
+        $stmt->bindValue(':memory_type', $memory_type,  PDO::PARAM_STR);
+        $stmt->bindValue(':limit',       $recordsPerPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset',      $offset,          PDO::PARAM_INT);
+        $stmt->execute();
+        
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } else {
+        
+        // this else condition will work only when the user dont add query to 
+        // search and doesnt filter so its an by default data once the user click to see the view data 
+
+        // for getting the total row number from the database  
+        $total = $pdo->query("SELECT COUNT(*) FROM memory_details")->fetchColumn();
+        $totalPages = ceil($total / $recordsPerPage); //- VALUE 5
+
+        $paginationQue = "SELECT * FROM memory_details LIMIT :limit OFFSET :offset";
+        $stmt2 = $pdo->prepare($paginationQue);
+        $stmt2->bindValue(':limit',  $recordsPerPage, PDO::PARAM_INT);
+        $stmt2->bindValue(':offset', $offset,         PDO::PARAM_INT);
+        $stmt2->execute();
+
+        $rows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+    }
 
     $pdo = null;
-    $stmt = null;
-
 
 } catch (PDOException $e) {
     echo "Database Error: " . $e->getMessage();
@@ -176,7 +179,6 @@ try {
             padding: 11px 16px;
             outline: none;
             transition: border-color 0.18s ease, background-color 0.18s ease;
-            -webkit-appearance: none;
         }
 
         input[type="search"]::placeholder {
@@ -376,11 +378,10 @@ try {
 <body>
 
     <!-- for searching  -->
-    <form action="view_memory.php" method="post">
+    <form method="get">
         <label>Search computer</label>
-        <input type="hidden" name="searching" value="submit">
         <input type="search" id="site-search" name="search_computer" />
-        <button type="submit" name="search_submit">Search</button>
+        <button type="submit">Search</button>
     </form>
 
     <!-- for filtering  -->
@@ -428,9 +429,13 @@ try {
 </table>
 
 <div style="width: 100vw; display: flex; justify-content: center; flex-direction: row;">
-    <?php for ($i=1; $i <= $totalPages ; $i++) { ?>
-        <a style="color: white; margin: 10px; list-style: none;" href="view_memory.php?page=<?= $i ?>"><?= $i ?></a>
-    <?php } ?>
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php
+            // carry search_computer through pagination so search isn't lost on page 2, 3…
+            $pageUrl = isset($_GET['search_computer']) ? "view_memory.php?search_computer=" . urlencode($_GET['search_computer']) . "&page=$i" : "view_memory.php?page=$i";
+        ?>
+        <a style="color: white; margin: 10px; list-style: none;" href="<?= $pageUrl ?>"><?= $i ?></a>
+    <?php endfor; ?>
 </div>
 
 <a href="add_memory.php">back to Home</a>
